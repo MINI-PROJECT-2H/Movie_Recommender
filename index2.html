@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streamflix - The Ultimate 10-Category Clone</title>
+    <!-- Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Link to external CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav id="navbar" class="nav">
+        <div class="nav-left">
+            <div class="logo-container">
+                <h1 class="streamflix-logo">STREAMFLIX</h1>
+            </div>
+            <ul class="nav-links">
+                <li class="active">Home</li>
+                <li>Series</li>
+                <li>Movies</li>
+                <li>Categories</li>
+                <li>My List</li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <i class="fas fa-search nav-icon"></i>
+            <i class="fas fa-bell nav-icon"></i>
+            <img class="avatar" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png" alt="Profile">
+        </div>
+    </nav>
+
+   <!-- EPIC HERO BANNER WITH VIDEO TRAILER -->
+    <header class="hero">
+        <div class="hero-vignette"></div>
+        
+        <!-- Video muted hi rahegi pehle, warna browser chalne nahi dega -->
+        <video id="hero-trailer" autoplay muted loop playsinline class="hero-bg">
+            <source src="hotd.mp4" type="video/mp4">
+        </video>
+        
+        <div class="hero-content">
+            <h1 class="hero-title">House of the Dragon</h1>
+            <p class="hero-description">An internal succession war within House Targaryen at the height of its power, 172 years before the birth of Daenerys Targaryen. Fire and Blood rule Westeros.</p>
+            <div class="hero-buttons">
+                <button class="btn btn-play"><i class="fas fa-play"></i> Play</button>
+                <button class="btn btn-info"><i class="fas fa-info-circle"></i> More Info</button>
+            </div>
+        </div>
+
+        <!-- NETFLIX STYLE UNMUTE BUTTON -->
+        <button id="mute-btn" class="mute-button" onclick="toggleMute()">
+            <i id="mute-icon" class="fas fa-volume-mute"></i>
+        </button>
+
+        <div class="hero-fade-bottom"></div>
+    </header>
+
+    <!-- 10 DISTINCT CATEGORIES -->
+    <main class="main-content">
+        <div class="movie-row"><h2 class="row-title">Trending Now</h2><div class="row-sliders" id="row-trending"></div></div>
+        <div class="movie-row"><h2 class="row-title">Top 10 in the World Today</h2><div class="row-sliders" id="row-top10"></div></div>
+        <div class="movie-row"><h2 class="row-title">Best Web Series</h2><div class="row-sliders" id="row-series"></div></div>
+        <div class="movie-row"><h2 class="row-title">Best Movies (Blockbusters)</h2><div class="row-sliders" id="row-movies"></div></div>
+        <div class="movie-row"><h2 class="row-title">Comedy Hits</h2><div class="row-sliders" id="row-comedy"></div></div>
+        <div class="movie-row"><h2 class="row-title">Mind-Bending Thrillers</h2><div class="row-sliders" id="row-thriller"></div></div>
+        <div class="movie-row"><h2 class="row-title">Chilling Horrors</h2><div class="row-sliders" id="row-horror"></div></div>
+        <div class="movie-row"><h2 class="row-title">Action & Adventure</h2><div class="row-sliders" id="row-action"></div></div>
+        <div class="movie-row"><h2 class="row-title">Sci-Fi & Fantasy</h2><div class="row-sliders" id="row-scifi"></div></div>
+        <div class="movie-row"><h2 class="row-title">Because You Watched Breaking Bad</h2><div class="row-sliders" id="row-recommend"></div></div>
+    </main>
+
+    <!-- X-RAY MODAL -->
+    <div id="movieModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()"><i class="fas fa-times"></i></span>
+            <div class="modal-body">
+                <div class="modal-img-container">
+                    <img id="modal-img" src="" alt="Poster" referrerpolicy="no-referrer" onerror="imageRetry(this, this.src)">
+                </div>
+                <div class="modal-info">
+                    <h2 id="modal-title">Title</h2>
+                    <div class="modal-meta">
+                        <span class="match" id="modal-match">98% Match</span>
+                        <span class="badge" id="modal-age">18+</span>
+                        <span class="badge" style="border-color: #E50914; color: #E50914;">4K Ultra HD</span>
+                        <span id="modal-genre" style="color: #bbb;">Genre</span>
+                    </div>
+                    <p id="modal-desc">Description...</p>
+                    <div class="xray-cast">
+                        <strong>Cast:</strong> <span id="modal-cast">Actors</span><br><br>
+                        <strong>Trivia:</strong> <span id="modal-trivia">Fact</span>
+                    </div>
+                    <button class="btn btn-play"><i class="fas fa-play"></i> Watch Now</button>
+                </div>
+            </div>
+            <div class="recommendations-section">
+                <h3>More Like This</h3>
+                <div class="rec-grid" id="rec-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>
