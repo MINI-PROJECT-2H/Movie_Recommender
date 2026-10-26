@@ -16,11 +16,21 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const TMDB_API_KEY = (process.env.TMDB_API_KEY || '').trim();
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 // Middleware
 app.use(express.json());
+
+// Enable CORS for Vercel preview/production deployments
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // In-memory cache for static/semi-static TMDB responses
 const cache = new Map();
@@ -41,40 +51,74 @@ function setCached(key, data, ttlMs = CACHE_TTL_MS) {
 }
 
 /**
+ * Safely retrieve TMDB API key from environment variables.
+ * Checks primary TMDB_API_KEY as well as common fallbacks.
+ * Strips accidental surrounding quotes and whitespace.
+ */
+function getApiKey() {
+  const raw = (
+    process.env.TMDB_API_KEY ||
+    process.env.TMDB_KEY ||
+    process.env.VITE_TMDB_API_KEY ||
+    process.env.NEXT_PUBLIC_TMDB_API_KEY ||
+    ''
+  ).trim();
+  return raw.replace(/^["']|["']$/g, '').trim();
+}
+
+/**
  * Validate that TMDB_API_KEY is configured and not the default placeholder
  */
 function isKeyConfigured() {
-  return TMDB_API_KEY && TMDB_API_KEY !== 'your_actual_key_goes_here';
+  const key = getApiKey();
+  return Boolean(
+    key &&
+    key !== 'your_actual_key_goes_here' &&
+    key !== 'your_api_key_here' &&
+    key !== 'your_key_here'
+  );
 }
 
 /**
  * Core helper to make authenticated requests to upstream TMDB API
  * Keeps the API key completely hidden on the server.
+ * Supports both standard TMDB v3 API Key (32 chars) and v4 Read Access Token (Bearer JWT).
  */
 async function callTmdb(endpoint, queryParams = {}, useCache = true) {
   if (!isKeyConfigured()) {
-    const err = new Error('TMDB_API_KEY is not configured in .env. Please set a valid TMDB API key in .env and restart.');
+    const err = new Error('TMDB_API_KEY is not configured in Vercel or .env environment variables.');
     err.status = 503;
     err.code = 'KEY_MISSING';
     throw err;
   }
 
+  const apiKey = getApiKey();
   const cacheKey = `${endpoint}_${JSON.stringify(queryParams)}`;
   if (useCache) {
     const cached = getCached(cacheKey);
     if (cached) return cached;
   }
 
+  const headers = {
+    'Accept': 'application/json'
+  };
+
   const params = new URLSearchParams({
-    api_key: TMDB_API_KEY,
     language: 'en-US',
     ...queryParams
   });
 
+  // If TMDB Read Access Token (JWT Bearer token), pass via Authorization header
+  if (apiKey.startsWith('eyJ') || apiKey.length > 50) {
+    headers['Authorization'] = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
+  } else {
+    params.set('api_key', apiKey);
+  }
+
   const url = `${TMDB_BASE_URL}${endpoint}?${params.toString()}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       let errorData = {};
@@ -109,6 +153,18 @@ async function callTmdb(endpoint, queryParams = {}, useCache = true) {
    ========================================================================== */
 
 /**
+ * GET /api
+ * Root proxy status
+ */
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'CineMatch TMDB Proxy API',
+    status: 'online',
+    keyConfigured: isKeyConfigured()
+  });
+});
+
+/**
  * GET /api/status
  * Returns current backend API status and configuration check without leaking secrets
  */
@@ -118,7 +174,7 @@ app.get('/api/status', async (req, res) => {
     return res.json({
       ok: false,
       keyConfigured: false,
-      message: 'TMDB_API_KEY is not configured in .env or is set to placeholder value.'
+      message: 'TMDB_API_KEY is not configured in Vercel or .env environment variables.'
     });
   }
 
@@ -341,12 +397,12 @@ app.use('/api', (err, req, res, next) => {
   });
 });
 
-// Start Server
-if (require.main === module) {
+// Start Server (only when executed directly locally, not when imported as Vercel serverless function)
+if (require.main === module && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`🎬 CineMatch Server running on http://localhost:${PORT}`);
-    console.log(`🔒 TMDB API Proxy active - API key secured in .env`);
+    console.log(`🔒 TMDB API Proxy active - API key secured`);
     console.log(`🔑 Key status: ${isKeyConfigured() ? 'Configured' : 'Missing / Placeholder (.env setup required)'}`);
     console.log(`=======================================================`);
   });

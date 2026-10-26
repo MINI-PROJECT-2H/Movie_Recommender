@@ -258,13 +258,13 @@ const TMDBApi = {
       return {
         ok: data.ok === true,
         keyConfigured: data.keyConfigured === true,
-        message: data.message || (res.ok ? 'Backend proxy online.' : 'Configuration needed.')
+        message: data.message || (res.ok ? 'Backend proxy online.' : `Backend returned status ${res.status}`)
       };
     } catch (err) {
       return {
         ok: false,
         keyConfigured: false,
-        message: 'Unable to reach backend server. Run "npm start" on port 3000.'
+        message: 'Unable to reach backend server. In Vercel, ensure vercel.json is deployed and TMDB_API_KEY is configured in Environment Variables.'
       };
     }
   },
@@ -799,6 +799,58 @@ const UIManager = {
   },
 
   /**
+   * Render informative fallback states across Hero, Carousels, and Catalog when backend/API is offline or unconfigured
+   */
+  renderApiOfflineState(message) {
+    this.dom.heroTitle.textContent = 'Welcome to CineMatch';
+    this.dom.heroOverview.textContent = message || 'To load live movies, search thousands of titles, and receive personalized recommendations, please configure your TMDB_API_KEY in Vercel Environment Variables or local .env file.';
+    this.dom.heroRatingVal.textContent = '—';
+    this.dom.heroYear.textContent = String(new Date().getFullYear());
+    this.dom.heroGenres.innerHTML = '<span class="genre-pill">Status: Offline</span>';
+
+    const errorHtml = (title, hint) => `
+      <div class="empty-state">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h3 class="empty-state-title">${this.escapeHtml(title)}</h3>
+        <p class="empty-state-text">${this.escapeHtml(hint || message || 'Configure your TMDB API Key to load movies.')}</p>
+        <button type="button" class="btn btn-secondary btn-sm" data-action="retry-init">Retry Connection</button>
+      </div>
+    `;
+
+    if (this.dom.trendingTrack) this.dom.trendingTrack.innerHTML = errorHtml('Trending Unavailable');
+    if (this.dom.popularTrack) this.dom.popularTrack.innerHTML = errorHtml('Popular Titles Unavailable');
+    if (this.dom.discoverGrid) this.dom.discoverGrid.innerHTML = errorHtml('Movie Catalog Unavailable');
+    if (this.dom.recsTrack) this.dom.recsTrack.innerHTML = errorHtml('Recommendations Paused', 'Recommendations will appear once connection to TMDB is established.');
+  },
+
+  /**
+   * Restore skeleton loaders during connection retry
+   */
+  renderSkeletonLoading() {
+    this.dom.heroTitle.textContent = 'Connecting to Movie Service...';
+    this.dom.heroOverview.textContent = 'Fetching the latest blockbusters and trending recommendations...';
+    this.dom.heroGenres.innerHTML = '';
+
+    const cardSkeletons = (count) => Array.from({ length: count }, () => `
+      <div class="movie-card skeleton-card">
+        <div class="skeleton-poster skeleton-shimmer"></div>
+        <div class="skeleton-info">
+          <div class="skeleton-line skeleton-shimmer" style="width: 80%;"></div>
+          <div class="skeleton-line skeleton-shimmer" style="width: 50%;"></div>
+        </div>
+      </div>
+    `).join('');
+
+    if (this.dom.trendingTrack) this.dom.trendingTrack.innerHTML = cardSkeletons(4);
+    if (this.dom.popularTrack) this.dom.popularTrack.innerHTML = cardSkeletons(4);
+    if (this.dom.discoverGrid) this.dom.discoverGrid.innerHTML = cardSkeletons(8);
+  },
+
+  /**
    * Populate Hero Section with a high-rated movie
    */
   renderHero(movie) {
@@ -1236,17 +1288,36 @@ const App = {
     this.bindEvents();
     UIManager.updateWatchlistCounters();
 
-    // Check backend status and TMDB key configuration in .env
+    // Check backend status and TMDB key configuration
     const status = await TMDBApi.checkBackendStatus();
     UIManager.updateApiStatusIndicator(status);
 
     if (!status.ok) {
       console.warn('[CineMatch] TMDB API key not configured or backend unavailable:', status.message);
+      UIManager.renderApiOfflineState(status.message);
       UIManager.renderWatchlist();
       return;
     }
 
     await this.loadInitialData();
+  },
+
+  /**
+   * Retry connection and reload application data
+   */
+  async retryInit() {
+    UIManager.renderSkeletonLoading();
+    UIManager.showToast('Checking connection to TMDB...', 'info');
+    const status = await TMDBApi.checkBackendStatus();
+    UIManager.updateApiStatusIndicator(status);
+
+    if (status.ok) {
+      await this.loadInitialData();
+      UIManager.showToast('Connected to TMDB successfully!', 'success');
+    } else {
+      UIManager.renderApiOfflineState(status.message);
+      UIManager.showToast(status.message || 'Unable to connect to TMDB.', 'warning');
+    }
   },
 
   /**
@@ -1304,11 +1375,11 @@ const App = {
 
     } catch (err) {
       console.error('[CineMatch] Initialization error:', err);
+      UIManager.renderApiOfflineState(err.message || 'Error connecting to movie service.');
       if (err.code === 'KEY_MISSING' || err.code === 'INVALID_KEY') {
-        UIManager.showToast('Please configure a valid TMDB_API_KEY in .env and restart server.', 'warning');
-        UIManager.openApiModal();
+        UIManager.showToast('Please configure a valid TMDB_API_KEY in Vercel or .env.', 'warning');
       } else if (err.code === 'NETWORK_ERROR') {
-        UIManager.showToast('Backend connection error. Make sure "npm start" is running.', 'warning');
+        UIManager.showToast('Backend connection error. Check server or deployment status.', 'warning');
       } else {
         UIManager.showToast(err.message || 'Error connecting to movie service.', 'warning');
       }
@@ -1432,6 +1503,14 @@ const App = {
       if (status.ok) {
         UIManager.showToast('Backend verified with TMDB!', 'success');
         this.loadInitialData();
+      }
+    });
+
+    // Retry connection event delegation
+    document.addEventListener('click', (e) => {
+      const retryBtn = e.target.closest('[data-action="retry-init"]');
+      if (retryBtn) {
+        this.retryInit();
       }
     });
 
@@ -1741,6 +1820,9 @@ const App = {
     });
   }
 };
+
+// Expose App globally
+window.App = App;
 
 // Initialize App when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
