@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CineMatch - A Netflix-inspired movie discovery and content-based recommendation platform powered by TMDB.">
+  <meta name="theme-color" content="#141414">
+  <title>CineMatch — Discover & Personalized Movie Recommendations</title>
+
+  <!-- Google Fonts: Outfit & Inter for Netflix-grade modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Skip Link for Accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="#hero" class="nav-logo" aria-label="CineMatch Home">
+          <span class="logo-red">CINE</span><span class="logo-white">MATCH</span>
+          <span class="logo-badge">TMDB</span>
+        </a>
+
+        <nav class="nav-links" id="nav-links" aria-label="Primary Navigation">
+          <a href="#hero" class="nav-link active" data-nav="hero">Home</a>
+          <a href="#trending-section" class="nav-link" data-nav="trending">Trending</a>
+          <a href="#popular-section" class="nav-link" data-nav="popular">Popular</a>
+          <a href="#recommendations-section" class="nav-link" data-nav="recommendations">For You</a>
+          <a href="#discover-section" class="nav-link" data-nav="discover">Discover</a>
+          <a href="#watchlist-section" class="nav-link" data-nav="watchlist">
+            My Watchlist
+            <span class="watchlist-pill" id="nav-watchlist-count">0</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="nav-right">
+        <!-- Live Search Input -->
+        <div class="search-bar" role="search">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="search" 
+            id="global-search-input" 
+            class="search-input" 
+            placeholder="Search titles, actors..." 
+            aria-label="Search movies"
+            autocomplete="off"
+          >
+          <button id="search-clear-btn" class="search-clear-btn hidden" aria-label="Clear search input">&times;</button>
+        </div>
+
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobile-nav-drawer" class="mobile-drawer" aria-hidden="true">
+      <nav class="mobile-nav-links">
+        <a href="#hero" class="mobile-nav-link" data-nav="hero">Home</a>
+        <a href="#trending-section" class="mobile-nav-link" data-nav="trending">Trending Movies</a>
+        <a href="#popular-section" class="mobile-nav-link" data-nav="popular">Popular Titles</a>
+        <a href="#recommendations-section" class="mobile-nav-link" data-nav="recommendations">For You (Recommendations)</a>
+        <a href="#discover-section" class="mobile-nav-link" data-nav="discover">Discover & Filter</a>
+        <a href="#watchlist-section" class="mobile-nav-link" data-nav="watchlist">
+          My Watchlist <span class="badge" id="mobile-watchlist-count">0</span>
+        </a>
+        <button id="mobile-api-btn" class="btn btn-secondary btn-block">TMDB API Configuration</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Missing API Key Notice Banner -->
+  <aside id="missing-key-banner" class="banner-alert hidden" role="alert">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="banner-text">
+        <strong>TMDB API Key Required in .env:</strong> To load live movies and recommendations, set your <code>TMDB_API_KEY</code> in the <code>.env</code> file and restart the server.
+      </div>
+      <div class="banner-actions">
+        <button id="banner-setup-btn" class="btn btn-primary btn-sm">Setup Instructions</button>
+        <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Get Free Key &nearr;</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Landmark -->
+  <main id="main-content">
+
+    <!-- 1. Cinematic Hero Section -->
+    <section id="hero" class="hero-section" aria-label="Featured Movie">
+      <div class="hero-backdrop" id="hero-backdrop"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-container">
+        <div class="hero-content" id="hero-content">
+          <div class="hero-badge-row">
+            <span class="hero-tag">FEATURED SPOTLIGHT</span>
+            <span class="hero-rating" id="hero-rating">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="star-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              <span id="hero-rating-val">8.4</span>
+            </span>
+            <span class="hero-year" id="hero-year">2026</span>
+          </div>
+
+          <h1 class="hero-title" id="hero-title">Loading Featured Film...</h1>
+
+          <div class="hero-genres" id="hero-genres" aria-label="Genres">
+            <!-- Dynamic genre pills -->
+          </div>
+
+          <p class="hero-overview" id="hero-overview">
+            Discover trending cinematic masterpieces, explore diverse genres, and receive personalized recommendations tailored to your taste.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#discover-section" class="btn btn-primary btn-lg" id="hero-explore-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="btn-icon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Explore Movies
+            </a>
+            <button class="btn btn-secondary btn-lg" id="hero-more-info-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              More Info
+            </button>
+            <button class="btn btn-icon-round" id="hero-watchlist-btn" title="Add to Watchlist" aria-label="Toggle Watchlist">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Trending Movies Section (Horizontal Carousel) -->
+    <section id="trending-section" class="section carousel-section" aria-labelledby="trending-title">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">POPULAR THIS WEEK</span>
+          <h2 id="trending-title" class="section-title">Trending Movies</h2>
+        </div>
+        <div class="carousel-controls" aria-label="Trending Carousel Navigation">
+          <button class="carousel-arrow carousel-prev" id="trending-prev" aria-label="Previous trending movies" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button class="carousel-arrow carousel-next" id="trending-next" aria-label="Next trending movies">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="trending-track" role="region" aria-live="polite">
+          <!-- Populated dynamically via JS -->
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Popular Movies Section (Horizontal Carousel) -->
+    <section id="popular-section" class="section carousel-section" aria-labelledby="popular-title">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">FAN FAVORITES</span>
+          <h2 id="popular-title" class="section-title">Top Rated & Popular</h2>
+        </div>
+        <div class="carousel-controls" aria-label="Popular Carousel Navigation">
+          <button class="carousel-arrow carousel-prev" id="popular-prev" aria-label="Previous popular movies" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button class="carousel-arrow carousel-next" id="popular-next" aria-label="Next popular movies">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="popular-track" role="region" aria-live="polite">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Personalized Recommendations ("For You") -->
+    <section id="recommendations-section" class="section recommendations-section" aria-labelledby="recommendations-title">
+      <div class="section-header wrap-header">
+        <div>
+          <span class="section-kicker">CONTENT-BASED FILTERING</span>
+          <h2 id="recommendations-title" class="section-title">Recommended For You</h2>
+          <p class="section-subtitle">
+            Tailored suggestions computed from your favorite genres and liked films using weighted feature matching.
+          </p>
+        </div>
+
+        <div class="recs-toolbar">
+          <button id="algo-info-btn" class="btn btn-ghost btn-sm" aria-label="Open recommendation algorithm details">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            How it works
+          </button>
+          <button id="refresh-recs-btn" class="btn btn-secondary btn-sm" aria-label="Recalculate recommendations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon refresh-icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Refresh Suggestions
+          </button>
+        </div>
+      </div>
+
+      <!-- Favorite Genres Preference Selector -->
+      <div class="genre-preference-box" aria-label="Favorite Genre Preferences">
+        <div class="genre-preference-header">
+          <span class="pref-label">Your Preferred Genres:</span>
+          <span class="pref-hint">Toggle genres to immediately steer your recommendation score</span>
+        </div>
+        <div class="genre-chips-container" id="recs-genre-chips" role="group" aria-label="Genre filters">
+          <!-- Dynamically populated genre chips -->
+        </div>
+      </div>
+
+      <!-- Recommendations Statistics and Status -->
+      <div class="recs-status-bar" id="recs-status-bar">
+        <span class="recs-stat-item" id="recs-likes-stat">0 movies liked</span>
+        <span class="recs-stat-separator">&bull;</span>
+        <span class="recs-stat-item" id="recs-genres-stat">0 genres selected</span>
+        <span class="recs-stat-separator">&bull;</span>
+        <span class="recs-stat-item text-muted">Algorithm: Weighted Content Match</span>
+      </div>
+
+      <!-- Recommendations Movie Grid -->
+      <div class="movie-grid" id="recommendations-grid" role="region" aria-live="polite">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- 5. Discover & Search Section -->
+    <section id="discover-section" class="section discover-section" aria-labelledby="discover-title">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">EXPLORE THE CATALOG</span>
+          <h2 id="discover-title" class="section-title">Discover Movies</h2>
+        </div>
+        <div class="results-count" id="discover-results-count" aria-live="polite">Showing movies</div>
+      </div>
+
+      <!-- Filter and Sort Controls -->
+      <div class="filter-controls-card">
+        <div class="filter-group">
+          <label for="genre-select" class="filter-label">Genre</label>
+          <select id="genre-select" class="form-select" aria-label="Filter by genre">
+            <option value="">All Genres</option>
+            <!-- Dynamic genres -->
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-select" class="filter-label">Sort By</label>
+          <select id="sort-select" class="form-select" aria-label="Sort movies by">
+            <option value="popularity.desc">Most Popular</option>
+            <option value="vote_average.desc">Highest Rated (Min 100 votes)</option>
+            <option value="primary_release_date.desc">Newest Releases</option>
+            <option value="revenue.desc">Top Box Office</option>
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button id="reset-filters-btn" class="btn btn-ghost btn-sm" aria-label="Reset all search filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            Reset Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Filter Pill Display -->
+      <div class="active-filters-row hidden" id="active-filters-row">
+        <span class="active-filter-label">Active Filter:</span>
+        <span class="filter-tag" id="active-filter-tag"></span>
+      </div>
+
+      <!-- Discover Grid -->
+      <div class="movie-grid" id="discover-grid" role="region" aria-live="polite">
+        <!-- Movies populated dynamically -->
+      </div>
+
+      <!-- Pagination / Load More -->
+      <div class="pagination-container" id="pagination-container">
+        <button id="load-more-btn" class="btn btn-secondary btn-lg" aria-label="Load more movies">
+          <span class="btn-text">Load More Movies</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 6. My Watchlist Section -->
+    <section id="watchlist-section" class="section watchlist-section" aria-labelledby="watchlist-title">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">SAVED TITLES</span>
+          <h2 id="watchlist-title" class="section-title">My Watchlist</h2>
+          <p class="section-subtitle">Movies you saved for later viewing. Persisted locally in your browser.</p>
+        </div>
+        <div class="watchlist-actions" id="watchlist-actions">
+          <button id="clear-watchlist-btn" class="btn btn-ghost btn-sm text-danger" aria-label="Clear all watchlist items">
+            Clear Watchlist
+          </button>
+        </div>
+      </div>
+
+      <!-- Watchlist Movie Grid -->
+      <div class="movie-grid" id="watchlist-grid" role="region" aria-live="polite">
+        <!-- Rendered dynamically or empty state -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Movie Details Modal -->
+  <div id="movie-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-movie-title" aria-hidden="true">
+    <div class="modal-card" id="modal-card">
+      <button class="modal-close-btn" id="modal-close-btn" aria-label="Close movie details modal">&times;</button>
+
+      <!-- Modal Hero Header with Backdrop -->
+      <div class="modal-hero">
+        <div class="modal-backdrop-img" id="modal-backdrop-img"></div>
+        <div class="modal-hero-gradient"></div>
+        
+        <!-- Video Player Overlay or Trailer Button -->
+        <div class="modal-video-container hidden" id="modal-video-container">
+          <!-- Trailer iframe injected here -->
+        </div>
+
+        <button class="modal-play-trailer-btn" id="modal-play-trailer-btn" aria-label="Play official movie trailer">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Watch Trailer</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <div class="modal-header-row">
+          <div class="modal-title-group">
+            <h2 class="modal-title" id="modal-movie-title">Movie Title</h2>
+            <div class="modal-tagline" id="modal-tagline"></div>
+          </div>
+
+          <!-- User Feedback Actions -->
+          <div class="modal-user-actions">
+            <button id="modal-watchlist-btn" class="action-btn" title="Save to Watchlist" aria-label="Add or remove from watchlist">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              <span id="modal-watchlist-text">Watchlist</span>
+            </button>
+            <button id="modal-like-btn" class="action-btn" title="Like movie to improve recommendations" aria-label="Like movie">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+              <span>Like</span>
+            </button>
+            <button id="modal-dislike-btn" class="action-btn" title="Dislike to exclude from recommendations" aria-label="Dislike movie">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+              <span>Dislike</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Meta Row -->
+        <div class="modal-meta-row">
+          <span class="badge badge-rating" id="modal-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="star-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span id="modal-rating-val">8.5</span>
+          </span>
+          <span class="modal-votes" id="modal-votes">(12,450 votes)</span>
+          <span class="meta-dot">&bull;</span>
+          <span class="modal-release-date" id="modal-release-date">2026</span>
+          <span class="meta-dot">&bull;</span>
+          <span class="modal-runtime" id="modal-runtime">2h 15m</span>
+          <span class="meta-dot">&bull;</span>
+          <span class="badge badge-subtle" id="modal-language">EN</span>
+        </div>
+
+        <!-- Genres -->
+        <div class="modal-genres" id="modal-genres" aria-label="Movie genres">
+          <!-- Dynamic genre tags -->
+        </div>
+
+        <!-- Overview -->
+        <div class="modal-section-block">
+          <h3 class="modal-subheading">Synopsis</h3>
+          <p class="modal-overview" id="modal-overview"></p>
+        </div>
+
+        <!-- Cast & Crew -->
+        <div class="modal-section-block">
+          <h3 class="modal-subheading">Top Cast</h3>
+          <div class="cast-row" id="modal-cast-row">
+            <!-- Cast items populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Similar / Recommended Movies -->
+        <div class="modal-section-block">
+          <h3 class="modal-subheading">More Like This</h3>
+          <div class="modal-similar-row" id="modal-similar-row">
+            <!-- Similar movie mini-cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Setup / Settings Modal -->
+  <div id="api-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="api-modal-title" aria-hidden="true">
+    <div class="modal-card modal-card-sm" id="api-modal-card">
+      <button class="modal-close-btn" id="api-modal-close-btn" aria-label="Close API settings modal">&times;</button>
+      
+      <div class="api-modal-content">
+        <div class="api-modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5"></circle>
+            <path d="m21 2-9.6 9.6"></path>
+            <path d="m15.5 7.5 3 3L22 7l-3-3"></path>
+          </svg>
+        </div>
+        <h2 id="api-modal-title" class="api-modal-title">TMDB API Configuration</h2>
+        <p class="api-modal-desc">
+          CineMatch uses a secure Node.js backend proxy. Your TMDB API key is kept safely in <code>.env</code> on the server and is never exposed to the browser.
+        </p>
+
+        <div class="api-instructions-card">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <span>Get a free API key at <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener noreferrer" class="link-red">themoviedb.org</a> (Settings &rarr; API)</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <span>Open the <code>.env</code> file in your project root</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <span>Add your key: <code>TMDB_API_KEY=your_key_here</code> and restart server</span>
+          </div>
+        </div>
+
+        <div class="api-status-card" id="api-backend-status-card">
+          <div class="status-indicator-row">
+            <span class="status-label">Backend Proxy Status:</span>
+            <span id="backend-status-badge" class="badge badge-subtle">Checking...</span>
+          </div>
+          <div id="api-validation-msg" class="api-msg hidden"></div>
+        </div>
+
+        <div class="api-modal-actions">
+          <button type="button" id="check-backend-status-btn" class="btn btn-primary btn-block">
+            <span class="btn-text">Test Backend Connection</span>
+            <span class="btn-spinner hidden" aria-hidden="true"></span>
+          </button>
+          <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-block">
+            Open TMDB API Portal &nearr;
+          </a>
+        </div>
+
+        <p class="api-security-notice">
+          <strong>Security Notice:</strong> The browser never handles the raw API key. All upstream TMDB calls are mediated by the Express backend proxy.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendation Algorithm Info Modal -->
+  <div id="algo-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="algo-modal-title" aria-hidden="true">
+    <div class="modal-card modal-card-md">
+      <button class="modal-close-btn" id="algo-modal-close-btn" aria-label="Close algorithm modal">&times;</button>
+      
+      <div class="algo-modal-body">
+        <h2 id="algo-modal-title" class="algo-title">How CineMatch Recommends Movies</h2>
+        <p class="algo-subtitle">
+          Transparent Content-Based Filtering & Weighted Feature Matching
+        </p>
+
+        <div class="algo-section">
+          <h3>Algorithm Principles</h3>
+          <p>
+            Unlike opaque deep learning models, CineMatch uses a <strong>deterministic content-based filtering model</strong> that scores movies based on their metadata features extracted from TMDB.
+          </p>
+        </div>
+
+        <div class="algo-formula-box">
+          <div class="formula-title">Mathematical Scoring Formula</div>
+          <code>Score(M) = &Sigma; (W_pref &times; Match_pref) + &Sigma; (W_like &times; Match_like) + (Rating &times; 0.2) + min(2.0, log10(Pop + 1))</code>
+        </div>
+
+        <div class="algo-weights-table">
+          <div class="weight-row weight-header">
+            <span>Factor</span>
+            <span>Weight</span>
+            <span>Description</span>
+          </div>
+          <div class="weight-row">
+            <span class="factor-name">Explicit Genre Match</span>
+            <span class="factor-val">+4.0 pts</span>
+            <span>Awarded for each genre matching user's selected preferences.</span>
+          </div>
+          <div class="weight-row">
+            <span class="factor-name">Liked Movie Association</span>
+            <span class="factor-val">+3.0 pts</span>
+            <span>Weighted by frequency of genres found in movies you liked.</span>
+          </div>
+          <div class="weight-row">
+            <span class="factor-name">Quality Rating (TMDB)</span>
+            <span class="factor-val">Up to +2.0 pts</span>
+            <span>Calculated as <code>(vote_average / 10) &times; 2.0</code>.</span>
+          </div>
+          <div class="weight-row">
+            <span class="factor-name">Popularity Factor</span>
+            <span class="factor-val">Up to +2.0 pts</span>
+            <span>Logarithmic scale <code>log10(popularity + 1)</code> to prevent bias.</span>
+          </div>
+          <div class="weight-row">
+            <span class="factor-name">Disliked Exclusions</span>
+            <span class="factor-val">Filtered Out</span>
+            <span>Disliked movies and already-liked titles are excluded.</span>
+          </div>
+        </div>
+
+        <div class="algo-example-box">
+          <h4>Worked Example:</h4>
+          <p>
+            If your preferred genres include <strong>Sci-Fi</strong> and <strong>Action</strong>, and you liked <em>Inception</em>:
+          </p>
+          <ul>
+            <li>A movie like <strong>Interstellar</strong> (Sci-Fi, Drama | Rating: 8.4) receives:
+              <br>• Explicit genre match (Sci-Fi): <strong>+4.0</strong>
+              <br>• Liked movies history match (Sci-Fi): <strong>+3.0</strong>
+              <br>• Rating quality: 8.4 &times; 0.2 = <strong>+1.68</strong>
+              <br>• Popularity factor: <strong>+1.32</strong>
+              <br>&rarr; <strong>Total Score: 10.0 / 10.0 &rarr; 98% Match Badge</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <a href="#hero" class="nav-logo">
+          <span class="logo-red">CINE</span><span class="logo-white">MATCH</span>
+        </a>
+        <p class="footer-desc">
+          A premium Netflix-inspired movie discovery platform & content-based recommendation engine built for academic and portfolio demonstration.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-heading">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="#hero">Home</a></li>
+          <li><a href="#trending-section">Trending This Week</a></li>
+          <li><a href="#popular-section">Top Rated & Popular</a></li>
+          <li><a href="#recommendations-section">Personalized For You</a></li>
+          <li><a href="#discover-section">Discover Catalog</a></li>
+          <li><a href="#watchlist-section">My Watchlist</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-heading">Technology</h4>
+        <ul class="footer-links">
+          <li>Semantic HTML5 & CSS3</li>
+          <li>Vanilla JavaScript (ES6+)</li>
+          <li>The Movie Database (TMDB) REST API</li>
+          <li>Browser LocalStorage Persistence</li>
+          <li>Content-Based Filtering Heuristics</li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-heading">Attribution</h4>
+        <div class="tmdb-attribution">
+          <p class="tmdb-disclaimer">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+          <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" class="tmdb-logo-link">
+            Visit The Movie Database &nearr;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-bottom-inner">
+        <span>&copy; 2026 CineMatch. Designed & Engineered with Vanilla Web Technologies.</span>
+        <span>Storage & Preferences: Local Browser Only</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

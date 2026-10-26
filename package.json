@@ -1,0 +1,24 @@
+{
+  "name": "cinematch",
+  "version": "1.0.0",
+  "description": "CineMatch - Netflix-inspired movie recommendation system powered by TMDB API and Node.js proxy backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test_suite.js"
+  },
+  "keywords": [
+    "movie-recommender",
+    "tmdb",
+    "vanilla-js",
+    "netflix-clone",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
